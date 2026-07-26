@@ -1,0 +1,92 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
+
+public class Jedis {
+    private final Map<String, String> store = new HashMap<String, String>();
+
+    public static void main(String[] args) throws Exception {
+        if (args.length != 1) {
+            throw new IllegalArgumentException("usage: java Jedis <port>");
+        }
+        new Jedis().serve(Integer.parseInt(args[0]));
+    }
+
+    private void serve(int port) throws IOException {
+        ServerSocket serverSocket = new ServerSocket(port);
+        while (true) {
+            final Socket socket = serverSocket.accept();
+            new Thread(new Runnable() {
+                public void run() {
+                    handle(socket);
+                }
+            }).start();
+        }
+    }
+
+    private void handle(Socket socket) {
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                writer.write(process(line));
+                writer.newLine();
+                writer.flush();
+            }
+        } catch (IOException ignored) {
+        } finally {
+            try {
+                socket.close();
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
+    private String process(String line) {
+        if (line == null || line.trim().length() == 0) {
+            return "ERR empty command";
+        }
+        String[] parts = line.trim().split("\\s+");
+        String command = parts[0];
+        if ("SET".equals(command)) {
+            if (parts.length != 3) {
+                return "ERR wrong number of arguments for 'SET'";
+            }
+            synchronized (store) {
+                store.put(parts[1], parts[2]);
+            }
+            return "OK";
+        }
+        if ("GET".equals(command)) {
+            if (parts.length != 2) {
+                return "ERR wrong number of arguments for 'GET'";
+            }
+            synchronized (store) {
+                String value = store.get(parts[1]);
+                return value == null ? "NULL" : value;
+            }
+        }
+        if ("DEL".equals(command)) {
+            if (parts.length != 2) {
+                return "ERR wrong number of arguments for 'DEL'";
+            }
+            synchronized (store) {
+                return store.remove(parts[1]) == null ? "0" : "1";
+            }
+        }
+        if ("PING".equals(command)) {
+            if (parts.length != 1) {
+                return "ERR wrong number of arguments for 'PING'";
+            }
+            return "PONG";
+        }
+        return "ERR unknown command '" + command + "'";
+    }
+}
