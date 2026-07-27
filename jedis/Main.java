@@ -7,11 +7,11 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Main {
-    private final Map<String, String> store = new HashMap<String, String>();
+    private final Map<String, String> store = new ConcurrentHashMap<String, String>();
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
@@ -61,27 +61,21 @@ public class Main {
             if (parts.length != 3) {
                 return "ERR wrong number of arguments for 'SET'";
             }
-            synchronized (store) {
-                store.put(parts[1], parts[2]);
-            }
+            store.put(parts[1], parts[2]);
             return "OK";
         }
         if ("GET".equals(command)) {
             if (parts.length != 2) {
                 return "ERR wrong number of arguments for 'GET'";
             }
-            synchronized (store) {
-                String value = store.get(parts[1]);
-                return value == null ? "NULL" : value;
-            }
+            String value = store.get(parts[1]);
+            return value == null ? "NULL" : value;
         }
         if ("DEL".equals(command)) {
             if (parts.length != 2) {
                 return "ERR wrong number of arguments for 'DEL'";
             }
-            synchronized (store) {
-                return store.remove(parts[1]) == null ? "0" : "1";
-            }
+            return store.remove(parts[1]) == null ? "0" : "1";
         }
         if ("PING".equals(command)) {
             if (parts.length == 1) {
