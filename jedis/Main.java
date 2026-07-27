@@ -7,11 +7,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Main {
     private final Map<String, String> store = new ConcurrentHashMap<String, String>();
+    private final Object commandLock = new Object();
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
@@ -21,7 +23,7 @@ public class Main {
     }
 
     private void serve(int port) throws IOException {
-        ServerSocket serverSocket = new ServerSocket(port);
+        ServerSocket serverSocket = new ServerSocket(port, 1024);
         while (true) {
             final Socket socket = serverSocket.accept();
             new Thread(new Runnable() {
@@ -34,8 +36,8 @@ public class Main {
 
     private void handle(Socket socket) {
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
+            BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), StandardCharsets.UTF_8));
             String line;
             while ((line = reader.readLine()) != null) {
                 writer.write(process(line));
@@ -52,37 +54,39 @@ public class Main {
     }
 
     private String process(String line) {
-        if (line == null || line.trim().length() == 0) {
-            return "ERR empty command";
-        }
-        String[] parts = line.trim().split("\\s+");
-        String command = parts[0];
-        if ("SET".equals(command)) {
-            if (parts.length != 3) {
-                return "ERR wrong number of arguments for 'SET'";
+        synchronized (commandLock) {
+            if (line == null || line.trim().length() == 0) {
+                return "ERR empty command";
             }
-            store.put(parts[1], parts[2]);
-            return "OK";
-        }
-        if ("GET".equals(command)) {
-            if (parts.length != 2) {
-                return "ERR wrong number of arguments for 'GET'";
+            String[] parts = line.trim().split("\\s+");
+            String command = parts[0];
+            if ("SET".equals(command)) {
+                if (parts.length != 3) {
+                    return "ERR wrong number of arguments for 'SET'";
+                }
+                store.put(parts[1], parts[2]);
+                return "OK";
             }
-            String value = store.get(parts[1]);
-            return value == null ? "NULL" : value;
-        }
-        if ("DEL".equals(command)) {
-            if (parts.length != 2) {
-                return "ERR wrong number of arguments for 'DEL'";
+            if ("GET".equals(command)) {
+                if (parts.length != 2) {
+                    return "ERR wrong number of arguments for 'GET'";
+                }
+                String value = store.get(parts[1]);
+                return value == null ? "NULL" : value;
             }
-            return store.remove(parts[1]) == null ? "0" : "1";
-        }
-        if ("PING".equals(command)) {
-            if (parts.length == 1) {
-                return "PONG";
+            if ("DEL".equals(command)) {
+                if (parts.length != 2) {
+                    return "ERR wrong number of arguments for 'DEL'";
+                }
+                return store.remove(parts[1]) == null ? "0" : "1";
             }
-            return "ERR unknown command 'PING'";
+            if ("PING".equals(command)) {
+                if (parts.length == 1) {
+                    return "PONG";
+                }
+                return "ERR unknown command 'PING'";
+            }
+            return "ERR unknown command '" + command + "'";
         }
-        return "ERR unknown command '" + command + "'";
     }
 }
