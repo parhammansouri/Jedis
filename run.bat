@@ -1,2 +1,2 @@
 @echo off
-java -cp out Jedis %*
+java -cp out jedis.Main %*

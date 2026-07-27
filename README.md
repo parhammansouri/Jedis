@@ -15,7 +15,7 @@ run.bat 6379
 or:
 
 ```bat
-java -cp out Jedis 6379
+java -cp out jedis.Main 6379
 ```
 
 `Jedis` is a small TCP key-value server with a line-based protocol.

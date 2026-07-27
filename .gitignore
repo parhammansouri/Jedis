@@ -5,3 +5,4 @@ jedis.out
 profiles/
 offline_data/
 sources.txt
+*.zip

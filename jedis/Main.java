@@ -1,3 +1,5 @@
+package jedis;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -8,14 +10,14 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Jedis {
+public class Main {
     private final Map<String, String> store = new HashMap<String, String>();
 
     public static void main(String[] args) throws Exception {
         if (args.length != 1) {
-            throw new IllegalArgumentException("usage: java Jedis <port>");
+            return;
         }
-        new Jedis().serve(Integer.parseInt(args[0]));
+        new Main().serve(Integer.parseInt(args[0]));
     }
 
     private void serve(int port) throws IOException {
@@ -82,10 +84,10 @@ public class Jedis {
             }
         }
         if ("PING".equals(command)) {
-            if (parts.length != 1) {
-                return "ERR wrong number of arguments for 'PING'";
+            if (parts.length == 1) {
+                return "PONG";
             }
-            return "PONG";
+            return "ERR unknown command 'PING'";
         }
         return "ERR unknown command '" + command + "'";
     }
