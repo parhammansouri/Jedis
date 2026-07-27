@@ -1,6 +1,4 @@
-# Tamrin 5
-
-Java implementations for the main parts of `تمرین پنجم.pdf`.
+# Jedis
 
 ## Build
 
@@ -11,25 +9,20 @@ build.bat
 ## Run
 
 ```bat
-run-jedis.bat 6379
-run-logrelay.bat
-run.bat server 8080
-run.bat client 127.0.0.1 8080
+run.bat 6379
 ```
 
-The thread-pool classes are available in the default package:
+or:
 
-- `MiniThreadPool`
-- `TaskQueue`
-- `SimpleFuture`
-- `RejectedTaskException`
+```bat
+java -cp out Jedis 6379
+```
 
-`LogRelayAnalyzer` listens on port `38291` and relays logs to `localhost:38292`.
+`Jedis` is a small TCP key-value server with a line-based protocol.
 
-The messenger part is implemented as:
+Supported commands:
 
-- `server.RelayServer`
-- `client.RelayClient`
-- `common.Frame`
-
-Runtime data is stored under `profiles/` and `offline_data/`.
+- `SET <key> <value>` -> `OK`
+- `GET <key>` -> stored value or `NULL`
+- `DEL <key>` -> `1` or `0`
+- `PING` -> `PONG`
